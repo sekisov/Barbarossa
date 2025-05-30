@@ -1,5 +1,4 @@
-﻿using Barbarossa.Models;
-using Barbarossa.ViewModels;
+﻿using Barbarossa.ViewModels;
 
 namespace Barbarossa.Views
 {

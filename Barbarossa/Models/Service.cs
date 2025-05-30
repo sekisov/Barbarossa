@@ -18,5 +18,12 @@ namespace Barbarossa.Models
 
         [ObservableProperty]
         private bool _isSelected;
+
+        private bool _showDuration;
+        public bool ShowDuration
+        {
+            get => _showDuration;
+            set => SetProperty(ref _showDuration, value);
+        }
     }
 }

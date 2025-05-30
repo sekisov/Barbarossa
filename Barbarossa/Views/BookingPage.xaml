@@ -6,6 +6,7 @@
              xmlns:behaviors="clr-namespace:CommunityToolkit.Maui.Behaviors;assembly=CommunityToolkit.Maui"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:converters="clr-namespace:Barbarossa.Converters" 
+             xmlns:animations="clr-namespace:Barbarossa.Services" 
              x:Class="Barbarossa.Views.BookingPage"
              Title="Бронирование"
              BackgroundColor="#FFE8E1"
@@ -41,36 +42,70 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <Grid Padding="15"
-                                  ColumnDefinitions="Auto,*,Auto,Auto"
-                                  BackgroundColor="{Binding IsSelected, 
-                                  Converter={StaticResource BoolToColorConverter}}">
+                                  ColumnDefinitions="Auto,*,Auto,Auto,Auto"
+                                  BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}}">
+
                                 <Grid.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BookingViewModel}}, 
                                                           Path=ItemSelectedCommand}"
                                                           CommandParameter="{Binding .}"/>
                                 </Grid.GestureRecognizers>
-                                
                                 <!-- Название услуги -->
                                 <Label Text="{Binding Name}" 
-                                       TextColor="{Binding IsSelected, 
-                                       Converter={StaticResource BoolToTextColorConverter}}"
+                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToTextColorConverter}}"
                                        Grid.Column="1"
                                        VerticalOptions="Center"/>
 
-                                <!-- Длительность -->
+                                <!-- Длительность (скрыта) -->
                                 <Label Text="{Binding Duration}" 
-                                       TextColor="{Binding IsSelected, 
-                                       Converter={StaticResource BoolToSecondaryTextColorConverter}}"
                                        Grid.Column="2"
-                                       VerticalOptions="Center"/>
+                                       IsVisible="False"/>
 
                                 <!-- Цена -->
                                 <Label Text="{Binding Price, StringFormat='{0} руб.'}" 
-                                       TextColor="{Binding IsSelected, 
-                                       Converter={StaticResource BoolToTextColorConverter}}"
+                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToTextColorConverter}}"
                                        FontAttributes="Bold"
                                        Grid.Column="3"
                                        VerticalOptions="Center"/>
+
+                                <!-- Иконка информации справа -->
+                                <ImageButton Grid.Column="4"
+                                             BackgroundColor="Transparent"
+                                             WidthRequest="18"
+                                             HeightRequest="18"
+                                             Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BookingViewModel}}, 
+                                                       Path=ShowDurationInfoCommand}"
+                                             CommandParameter="{Binding Duration}">
+
+                                    <!-- Шрифтовая иконка -->
+                                    <ImageButton.Source>
+                                        <FontImageSource Glyph="&#xe88e;"  
+                                                         Color="#4A2E27"
+                                                         FontFamily="MaterialIcons-Regular"
+                                                         Size="18"/>
+                                    </ImageButton.Source>
+
+                                    <!-- Анимация при нажатии -->
+                                    <ImageButton.Triggers>
+                                        <EventTrigger Event="Pressed">
+                                            <animations:ScaleAction Scale="0.8" Duration="100"/>
+                                        </EventTrigger>
+                                        <EventTrigger Event="Released">
+                                            <animations:ScaleAction Scale="1.0" Duration="100"/>
+                                        </EventTrigger>
+                                    </ImageButton.Triggers>
+
+                                    <!-- Состояния -->
+                                    <VisualStateManager.VisualStateGroups>
+                                        <VisualStateGroup Name="CommonStates">
+                                            <VisualState Name="Pressed">
+                                                <VisualState.Setters>
+                                                    <Setter Property="Opacity" Value="0.7"/>
+                                                </VisualState.Setters>
+                                            </VisualState>
+                                        </VisualStateGroup>
+                                    </VisualStateManager.VisualStateGroups>
+                                </ImageButton>
                             </Grid>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
@@ -91,6 +126,8 @@
                         SelectedItem="{Binding SelectedMaster}"
                         ItemDisplayBinding="{Binding Name}"
                         BackgroundColor="#FFFFFF"
+                        Title="Выбрать мастера"
+                        TitleColor="#694237"
                         TextColor="#4A2E27">
                     <Picker.Behaviors>
                         <behaviors:EventToCommandBehavior
@@ -135,6 +172,7 @@
                             MinimumDate="{x:Static system:DateTime.Today}"
                             BackgroundColor="#FFFFFF"
                             TextColor="#4A2E27"
+                            Format="dd.MM.yyyy"                             
                             IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}">
                     <DatePicker.Behaviors>
                         <behaviors:EventToCommandBehavior

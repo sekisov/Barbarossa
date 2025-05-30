@@ -1,5 +1,7 @@
 ﻿using Barbarossa.Models;
 using Barbarossa.Services;
+using CommunityToolkit.Maui.Alerts;
+using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
@@ -42,6 +44,23 @@ namespace Barbarossa.ViewModels
         [ObservableProperty]
         private decimal _totalPrice;
 
+        public ICommand ShowDurationInfoCommand => new Command<string>(async (duration) =>
+        {
+            var snackbarOptions = new SnackbarOptions
+            {
+                BackgroundColor = Color.FromArgb("#FFD0C2"),
+                TextColor = Color.FromArgb("#4A2E27"),
+                CornerRadius = new CornerRadius(10),
+                Font = Microsoft.Maui.Font.SystemFontOfSize(14)
+            };
+
+            await Shell.Current.DisplaySnackbar(
+                    message: $"Продолжительность выполнения услуги: {duration}",
+                    actionButtonText: "OK",
+                    duration: TimeSpan.FromSeconds(3),
+                    visualOptions: snackbarOptions);
+        });
+
         public bool ShowNextSteps => SelectedServices.Any();
         public string SelectedServicesText => SelectedServices.Any()
             ? $"Выбрано услуг: {SelectedServices.Count}"
@@ -62,7 +81,7 @@ namespace Barbarossa.ViewModels
         public ICommand ItemSelectedCommand => new Command<Service>(item =>
         {
             item.IsSelected = !item.IsSelected;
-            
+
             UpdateSelectedServices();
             UpdateAvailableMasters();
         });
