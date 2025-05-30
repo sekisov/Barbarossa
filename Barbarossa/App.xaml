@@ -1,0 +1,20 @@
+﻿<?xml version = "1.0" encoding = "UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:Barbarossa.Converters"
+             x:Class="Barbarossa.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- Конвертеры -->
+            <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
+            <converters:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter" />
+
+            <!-- Цветовая палитра -->
+            <Color x:Key="PrimaryDark">#4A2E27</Color>
+            <Color x:Key="Primary">#694237</Color>
+            <Color x:Key="LightAccent">#FFD0C2</Color>
+            <Color x:Key="VeryLightAccent">#FFE8E1</Color>
+            <Color x:Key="White">#FFFFFF</Color>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

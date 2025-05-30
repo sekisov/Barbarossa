@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Barbarossa.ViewModels"
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"             
+             xmlns:behaviors="clr-namespace:CommunityToolkit.Maui.Behaviors;assembly=CommunityToolkit.Maui"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:converters="clr-namespace:Barbarossa.Converters" 
+             x:Class="Barbarossa.Views.BookingPage"
+             Title="Бронирование"
+             BackgroundColor="#FFE8E1"
+             x:Name="Page">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
+            <converters:BoolToTextColorConverter x:Key="BoolToTextColorConverter" />
+            <converters:BoolToSecondaryTextColorConverter x:Key="BoolToSecondaryTextColorConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+            <!-- Шаг 1: Выбор услуг -->
+            <Label Text="1. Выберите услуги:" 
+                   FontAttributes="Bold"
+                   TextColor="#4A2E27"
+                   FontSize="16"/>
+
+            <Label Text="{Binding SelectedServicesText}"
+                   TextColor="#694237"
+                   FontAttributes="Italic"
+                   Margin="0,0,0,10"/>
+
+            <Frame BackgroundColor="#FFFFFF"
+                   CornerRadius="10"
+                   Padding="0">
+
+
+                <CollectionView ItemsSource="{Binding AllServices}"
+                SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="15"
+                                  ColumnDefinitions="Auto,*,Auto,Auto"
+                                  BackgroundColor="{Binding IsSelected, 
+                                  Converter={StaticResource BoolToColorConverter}}">
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BookingViewModel}}, 
+                                                          Path=ItemSelectedCommand}"
+                                                          CommandParameter="{Binding .}"/>
+                                </Grid.GestureRecognizers>
+                                
+                                <!-- Название услуги -->
+                                <Label Text="{Binding Name}" 
+                                       TextColor="{Binding IsSelected, 
+                                       Converter={StaticResource BoolToTextColorConverter}}"
+                                       Grid.Column="1"
+                                       VerticalOptions="Center"/>
+
+                                <!-- Длительность -->
+                                <Label Text="{Binding Duration}" 
+                                       TextColor="{Binding IsSelected, 
+                                       Converter={StaticResource BoolToSecondaryTextColorConverter}}"
+                                       Grid.Column="2"
+                                       VerticalOptions="Center"/>
+
+                                <!-- Цена -->
+                                <Label Text="{Binding Price, StringFormat='{0} руб.'}" 
+                                       TextColor="{Binding IsSelected, 
+                                       Converter={StaticResource BoolToTextColorConverter}}"
+                                       FontAttributes="Bold"
+                                       Grid.Column="3"
+                                       VerticalOptions="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Frame>
+            
+            
+
+            <!-- Последующие шаги (появляются после выбора услуг) -->
+            <StackLayout IsVisible="{Binding ShowNextSteps}" Spacing="15">
+                <!-- Шаг 2: Выбор мастера -->
+                <Label Text="2. Выберите мастера:" 
+                       FontAttributes="Bold"
+                       TextColor="#4A2E27"
+                       FontSize="16"/>
+
+                <Picker ItemsSource="{Binding AvailableMasters}"
+                        SelectedItem="{Binding SelectedMaster}"
+                        ItemDisplayBinding="{Binding Name}"
+                        BackgroundColor="#FFFFFF"
+                        TextColor="#4A2E27">
+                    <Picker.Behaviors>
+                        <behaviors:EventToCommandBehavior
+                            EventName="SelectedIndexChanged"
+                            Command="{Binding LoadDatesCommand}"/>
+                    </Picker.Behaviors>
+                </Picker>
+
+                <!-- Информация о мастере -->
+                <Frame IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"
+                       BackgroundColor="#FFD0C2"
+                       Padding="10"
+                       CornerRadius="10"
+                       Margin="0,10,0,0">
+                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                          ColumnSpacing="10" RowSpacing="5">
+                        <Image Source="{Binding SelectedMaster.AvatarUrl}"
+                               WidthRequest="60" HeightRequest="60"
+                               Aspect="AspectFill" Grid.RowSpan="2">
+                            <Image.Clip>
+                                <EllipseGeometry Center="30,30" RadiusX="30" RadiusY="30"/>
+                            </Image.Clip>
+                        </Image>
+                        <Label Text="{Binding SelectedMaster.Name}" 
+                               FontAttributes="Bold" 
+                               TextColor="#4A2E27"
+                               Grid.Column="1"/>
+                        <Label Text="{Binding SelectedMaster.JobTitle}" 
+                               TextColor="#694237" 
+                               Grid.Column="1" Grid.Row="1"/>
+                    </Grid>
+                </Frame>
+
+                <!-- Шаг 3: Выбор даты -->
+                <Label Text="3. Выберите дату:" 
+                       FontAttributes="Bold"
+                       TextColor="#4A2E27"
+                       FontSize="16"
+                       IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"/>
+
+                <DatePicker Date="{Binding SelectedDate}"
+                            MinimumDate="{x:Static system:DateTime.Today}"
+                            BackgroundColor="#FFFFFF"
+                            TextColor="#4A2E27"
+                            IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}">
+                    <DatePicker.Behaviors>
+                        <behaviors:EventToCommandBehavior
+                            EventName="DateSelected"
+                            Command="{Binding LoadTimesCommand}"/>
+                    </DatePicker.Behaviors>
+                </DatePicker>
+
+                <!-- Шаг 4: Выбор времени -->
+                <Label Text="4. Выберите время:" 
+                       FontAttributes="Bold"
+                       TextColor="#4A2E27"
+                       FontSize="16"
+                       IsVisible="{Binding SelectedDate, Converter={StaticResource NullToBoolConverter}}"/>
+
+                <CollectionView ItemsSource="{Binding AvailableTimes}"
+                                SelectionMode="Single"
+                                SelectedItem="{Binding SelectedTime}"
+                                Margin="0,5,0,0"
+                                IsVisible="{Binding SelectedDate, Converter={StaticResource NullToBoolConverter}}">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10"/>
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame Padding="15" 
+                                   BackgroundColor="#FFD0C2"
+                                   CornerRadius="10">
+                                <Label Text="{Binding .}" 
+                                       FontSize="14"
+                                       TextColor="#4A2E27"/>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Итоговая цена -->
+                <Label Text="{Binding TotalPrice, StringFormat='Итого: {0} руб.'}"
+                       FontSize="18" 
+                       FontAttributes="Bold"
+                       TextColor="#4A2E27"
+                       HorizontalOptions="End"
+                       Margin="0,10,0,0"/>
+
+                <!-- Кнопка бронирования -->
+                <Button Text="Забронировать"
+                        Command="{Binding BookAppointmentCommand}"
+                        IsEnabled="{Binding SelectedTime, Converter={StaticResource NullToBoolConverter}}"
+                        BackgroundColor="#694237"
+                        TextColor="#FFFFFF"
+                        CornerRadius="10"
+                        FontAttributes="Bold"
+                        Margin="0,20,0,0"
+                        HeightRequest="50"/>
+            </StackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
