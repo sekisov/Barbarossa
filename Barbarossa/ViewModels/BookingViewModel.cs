@@ -5,6 +5,7 @@ using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Text;
 using System.Windows.Input;
 
@@ -30,16 +31,16 @@ namespace Barbarossa.ViewModels
         private DateTime _selectedDate = DateTime.Today;
 
         [ObservableProperty]
-        private string? _selectedTime;
+        private AvailableSlot? _selectedTime;
 
         [ObservableProperty]
         private ObservableCollection<Master> _availableMasters = [];
 
         [ObservableProperty]
         private ObservableCollection<DateTime> _availableDates = [];
-
+        
         [ObservableProperty]
-        private ObservableCollection<string> _availableTimes = [];
+        private ObservableCollection<AvailableSlot> _availableTimes = new ObservableCollection<AvailableSlot>();
 
         [ObservableProperty]
         private decimal _totalPrice;
@@ -75,7 +76,6 @@ namespace Barbarossa.ViewModels
 
         public IAsyncRelayCommand LoadDataCommand { get; }
         public IAsyncRelayCommand LoadDatesCommand => new AsyncRelayCommand(LoadDatesAsync);
-        public IAsyncRelayCommand LoadTimesCommand => new AsyncRelayCommand(LoadTimesAsync);
 
         // Команда для обработки выбора элемента
         public ICommand ItemSelectedCommand => new Command<Service>(item =>
@@ -85,7 +85,40 @@ namespace Barbarossa.ViewModels
             UpdateSelectedServices();
             UpdateAvailableMasters();
         });
+        partial void OnSelectedDateChanged(DateTime value)
+        {
+            // Вызов асинхронной обработки
+            _ = HandleDateChangeAsync(value);
+        }
+        private async Task HandleDateChangeAsync(DateTime newDate)
+        {
+            if (SelectedMaster == null || SelectedDate == default)
+                return;
 
+            try
+            {
+                var dateKey = SelectedDate.ToString("dd.MM.yyyy");
+                if (SelectedMaster.AvailableSlots.TryGetValue(dateKey, out var times))
+                {
+                    AvailableTimes.Clear();
+                    foreach (var time in times.Distinct().OrderBy(t => t.Time))
+                    {
+                        AvailableTimes.Add(time);
+                    }
+                }
+                else
+                {
+                    AvailableTimes.Clear();
+                }
+
+                // Явно уведомляем об изменении
+                OnPropertyChanged(nameof(AvailableTimes));
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
+            }
+        }
 
         private async Task LoadDataAsync()
         {
@@ -127,10 +160,10 @@ namespace Barbarossa.ViewModels
                 AvailableMasters.Clear();
             }
         }
-
         private async Task LoadDatesAsync()
         {
-            if (SelectedMaster == null) return;
+            if (SelectedMaster == null)
+                return;
 
             try
             {
@@ -147,28 +180,6 @@ namespace Barbarossa.ViewModels
             }
         }
 
-        private async Task LoadTimesAsync()
-        {
-            if (SelectedMaster == null || SelectedDate == default) return;
-
-            try
-            {
-                var dateKey = SelectedDate.ToString("dd.MM.yyyy");
-                if (SelectedMaster.AvailableSlots.TryGetValue(dateKey, out var times))
-                {
-                    AvailableTimes = [.. times.Distinct().OrderBy(t => t)];
-                }
-                else
-                {
-                    AvailableTimes.Clear();
-                }
-            }
-            catch (Exception ex)
-            {
-                await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
-            }
-        }
-
         private void CalculateTotal()
         {
             TotalPrice = SelectedServices.Sum(s => s.Price);
@@ -178,7 +189,7 @@ namespace Barbarossa.ViewModels
         private async Task BookAppointment()
         {
             if (!SelectedServices.Any() || SelectedMaster == null ||
-                SelectedDate == default || string.IsNullOrEmpty(SelectedTime))
+                SelectedDate == default || SelectedTime != null)
             {
                 await Shell.Current.DisplayAlert("Ошибка", "Пожалуйста, заполните все поля", "OK");
                 return;
@@ -195,7 +206,7 @@ namespace Barbarossa.ViewModels
                 .AppendLine("----------------------------")
                 .AppendLine($"Мастер: {SelectedMaster?.Name}")
                 .AppendLine($"Дата: {SelectedDate:dd.MM.yyyy}")
-                .AppendLine($"Время: {SelectedTime}")
+                .AppendLine($"Время: {SelectedTime?.Time}")
                 .AppendLine()
                 .AppendLine("Выбранные услуги:");
 

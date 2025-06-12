@@ -1,6 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System.Collections.Generic;
-
 namespace Barbarossa.Models
 {
     public partial class Master : ObservableObject
@@ -21,6 +19,6 @@ namespace Barbarossa.Models
         private List<Service> _services = new();
 
         [ObservableProperty]
-        private Dictionary<string, List<string>> _availableSlots = new();
+        private Dictionary<string, List<AvailableSlot>> _availableSlots = new();
     }
 }

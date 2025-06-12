@@ -45,7 +45,7 @@ namespace Barbarossa.Services
                     }).ToList(),
                     AvailableSlots = dto.seans?.ToDictionary(
                         kvp => kvp.Key,
-                        kvp => kvp.Value.Select(t => t.time).Distinct().ToList()
+                        kvp => kvp.Value.Select(t => new AvailableSlot { Time = t.time, Date = t.date, Id = t.id }).Distinct().ToList()
                     ) ?? []
                 });
             }
