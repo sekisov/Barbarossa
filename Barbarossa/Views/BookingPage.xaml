@@ -13,13 +13,13 @@
              BackgroundColor="#FFE8E1"
              x:Name="Page">
 
-    <!-- Общие ресурсы со стилями -->
     <ContentPage.Resources>
         <ResourceDictionary>
             <!-- Конвертеры -->
             <converters:BoolToColorConverter x:Key="BoolToColorConverter" />
             <converters:BoolToTextColorConverter x:Key="BoolToTextColorConverter" />
             <converters:BoolToSecondaryTextColorConverter x:Key="BoolToSecondaryTextColorConverter" />
+            <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
 
             <!-- Общие стили -->
             <Style TargetType="Border" x:Key="RoundedBorderStyle">
@@ -40,214 +40,228 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="15">
+    <!-- Обернем всё в Grid, чтобы ActivityIndicator был поверх ScrollView -->
+    <Grid>
+        <!-- Основной контент -->
+        <ScrollView IsVisible="{Binding IsNotBusy}">
+            <VerticalStackLayout Padding="20" Spacing="15">
 
-            <!-- Шаг 1: Выбор услуг -->
-            <Label Text="1. Выберите услуги:" 
-                   FontAttributes="Bold"
-                   TextColor="#4A2E27"
-                   FontSize="16"/>
-
-            <Label Text="{Binding SelectedServicesText}"
-                   TextColor="#694237"
-                   FontAttributes="Italic"
-                   Margin="0,0,0,10"/>
-
-            <!-- Заменяем Frame на Border -->
-            <Border Style="{StaticResource RoundedBorderStyle}"
-                   BackgroundColor="#FFFFFF">
-
-                <CollectionView ItemsSource="{Binding AllServices}"
-                               SelectionMode="None"
-                               Style="{StaticResource RoundedCollectionViewStyle}">
-                    <!-- Остальной код CollectionView без изменений -->
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Padding="15"
-                                  ColumnDefinitions="Auto,*,Auto,Auto,Auto"
-                                  BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}}">
-
-                                <Grid.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BookingViewModel}}, 
-                                                          Path=ItemSelectedCommand}"
-                                                          CommandParameter="{Binding .}"/>
-                                </Grid.GestureRecognizers>
-
-                                <!-- Название услуги -->
-                                <Label Text="{Binding Name}" 
-                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToTextColorConverter}}"
-                                       Grid.Column="1"
-                                       VerticalOptions="Center"/>
-
-                                <!-- Длительность (скрыта) -->
-                                <Label Text="{Binding Duration}" 
-                                       Grid.Column="2"
-                                       IsVisible="False"/>
-
-                                <!-- Цена -->
-                                <Label Text="{Binding Price, StringFormat='{0} руб.'}" 
-                                       TextColor="{Binding IsSelected, Converter={StaticResource BoolToTextColorConverter}}"
-                                       FontAttributes="Bold"
-                                       Grid.Column="3"
-                                       VerticalOptions="Center"/>
-
-                                <!-- Иконка информации справа -->
-                                <ImageButton Grid.Column="4"
-                                             BackgroundColor="Transparent"
-                                             WidthRequest="18"
-                                             HeightRequest="18"
-                                             Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BookingViewModel}}, 
-                                                       Path=ShowDurationInfoCommand}"
-                                             CommandParameter="{Binding Duration}">
-
-                                    <ImageButton.Source>
-                                        <FontImageSource Glyph="&#xe88e;"  
-                                                         Color="#4A2E27"
-                                                         FontFamily="MaterialIcons-Regular"
-                                                         Size="18"/>
-                                    </ImageButton.Source>
-
-                                    <ImageButton.Triggers>
-                                        <EventTrigger Event="Pressed">
-                                            <animations:ScaleAction Scale="0.8" Duration="100"/>
-                                        </EventTrigger>
-                                        <EventTrigger Event="Released">
-                                            <animations:ScaleAction Scale="1.0" Duration="100"/>
-                                        </EventTrigger>
-                                    </ImageButton.Triggers>
-
-                                    <VisualStateManager.VisualStateGroups>
-                                        <VisualStateGroup Name="CommonStates">
-                                            <VisualState Name="Pressed">
-                                                <VisualState.Setters>
-                                                    <Setter Property="Opacity" Value="0.7"/>
-                                                </VisualState.Setters>
-                                            </VisualState>
-                                        </VisualStateGroup>
-                                    </VisualStateManager.VisualStateGroups>
-                                </ImageButton>
-                            </Grid>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-            </Border>
-
-            <!-- Последующие шаги -->
-            <StackLayout IsVisible="{Binding ShowNextSteps}" Spacing="15">
-
-                <!-- Шаг 2: Выбор мастера -->
-                <Label Text="2. Выберите мастера:" 
+                <!-- Шаг 1: Выбор услуг -->
+                <Label Text="1. Выберите услуги:" 
                        FontAttributes="Bold"
                        TextColor="#4A2E27"
                        FontSize="16"/>
 
-                <Border Style="{StaticResource RoundedBorderStyle}"
-                       BackgroundColor="#FFFFFF">
-                    <Picker ItemsSource="{Binding AvailableMasters}"
-                            SelectedItem="{Binding SelectedMaster}"
-                            ItemDisplayBinding="{Binding Name}"
-                            BackgroundColor="Transparent"
-                            Title="Выбрать мастера"
-                            TitleColor="#694237"
-                            TextColor="#4A2E27">
-                        <Picker.Behaviors>
-                            <behaviors:EventToCommandBehavior
-                                EventName="SelectedIndexChanged"
-                                Command="{Binding LoadDatesCommand}"/>
-                        </Picker.Behaviors>
-                    </Picker>
-                </Border>
-
-                <!-- Информация о мастере (заменяем Frame на Border) -->
-                <Border IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"
-                       Style="{StaticResource RoundedBorderStyle}"
-                       BackgroundColor="#FFD0C2"
-                       Padding="10"
-                       Margin="0,10,0,0">
-                    <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
-                          ColumnSpacing="10" RowSpacing="5">
-                        <Image Source="{Binding SelectedMaster.AvatarUrl}"
-                               WidthRequest="60" HeightRequest="60"
-                               Aspect="AspectFill" Grid.RowSpan="2">
-                            <Image.Clip>
-                                <EllipseGeometry Center="30,30" RadiusX="30" RadiusY="30"/>
-                            </Image.Clip>
-                        </Image>
-                        <Label Text="{Binding SelectedMaster.Name}" 
-                               FontAttributes="Bold" 
-                               TextColor="#4A2E27"
-                               Grid.Column="1"/>
-                        <Label Text="{Binding SelectedMaster.JobTitle}" 
-                               TextColor="#694237" 
-                               Grid.Column="1" Grid.Row="1"/>
-                    </Grid>
-                </Border>
-
-                <!-- Шаг 3: Выбор даты -->
-                <Label Text="3. Выберите дату:" 
-                       FontAttributes="Bold"
-                       TextColor="#4A2E27"
-                       FontSize="16"
-                       IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"/>
+                <Label Text="{Binding SelectedServicesText}"
+                       TextColor="#694237"
+                       FontAttributes="Italic"
+                       Margin="0,0,0,10"/>
 
                 <Border Style="{StaticResource RoundedBorderStyle}"
                        BackgroundColor="#FFFFFF">
-                    <DatePicker 
-                            Date="{Binding SelectedDate, Mode=TwoWay}"  
-                            MinimumDate="{x:Static system:DateTime.Today}"
-                            BackgroundColor="Transparent"
-                            TextColor="#4A2E27"
-                            Format="dd.MM.yyyy"
-                            IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"/>
+                    <CollectionView ItemsSource="{Binding AllServices}"
+                                   SelectionMode="None"
+                                   Style="{StaticResource RoundedCollectionViewStyle}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="15"
+                                      ColumnDefinitions="Auto,*,Auto,Auto,Auto"
+                                      BackgroundColor="{Binding IsSelected, Converter={StaticResource BoolToColorConverter}}">
+
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BookingViewModel}}, 
+                                                              Path=ItemSelectedCommand}"
+                                                              CommandParameter="{Binding .}"/>
+                                    </Grid.GestureRecognizers>
+
+                                    <Label Text="{Binding Name}" 
+                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToTextColorConverter}}"
+                                           Grid.Column="1"
+                                           VerticalOptions="Center"/>
+
+                                    <Label Text="{Binding Duration}" 
+                                           Grid.Column="2"
+                                           IsVisible="False"/>
+
+                                    <Label Text="{Binding Price, StringFormat='{0} руб.'}" 
+                                           TextColor="{Binding IsSelected, Converter={StaticResource BoolToTextColorConverter}}"
+                                           FontAttributes="Bold"
+                                           Grid.Column="3"
+                                           VerticalOptions="Center"/>
+
+                                    <ImageButton Grid.Column="4"
+                                                 BackgroundColor="Transparent"
+                                                 WidthRequest="18"
+                                                 HeightRequest="18"
+                                                 Command="{Binding Source={RelativeSource AncestorType={x:Type vm:BookingViewModel}}, 
+                                                           Path=ShowDurationInfoCommand}"
+                                                 CommandParameter="{Binding Duration}">
+
+                                        <ImageButton.Source>
+                                            <FontImageSource Glyph="&#xe88e;"  
+                                                             Color="#4A2E27"
+                                                             FontFamily="MaterialIcons-Regular"
+                                                             Size="18"/>
+                                        </ImageButton.Source>
+
+                                        <ImageButton.Triggers>
+                                            <EventTrigger Event="Pressed">
+                                                <animations:ScaleAction Scale="0.8" Duration="100"/>
+                                            </EventTrigger>
+                                            <EventTrigger Event="Released">
+                                                <animations:ScaleAction Scale="1.0" Duration="100"/>
+                                            </EventTrigger>
+                                        </ImageButton.Triggers>
+
+                                        <VisualStateManager.VisualStateGroups>
+                                            <VisualStateGroup Name="CommonStates">
+                                                <VisualState Name="Pressed">
+                                                    <VisualState.Setters>
+                                                        <Setter Property="Opacity" Value="0.7"/>
+                                                    </VisualState.Setters>
+                                                </VisualState>
+                                            </VisualStateGroup>
+                                        </VisualStateManager.VisualStateGroups>
+                                    </ImageButton>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
                 </Border>
 
-                <!-- Шаг 4: Выбор времени -->
-                <Label Text="4. Выберите время:" 
-                       FontAttributes="Bold" 
-                       TextColor="#4A2E27"
-                       FontSize="16"
-                       IsVisible="{Binding SelectedDate, Converter={StaticResource NullToBoolConverter}}"/>
+                <!-- Последующие шаги -->
+                <StackLayout IsVisible="{Binding ShowNextSteps}" Spacing="15">
 
-                <CollectionView ItemsSource="{Binding AvailableTimes}"
-                SelectionMode="Single"
-                SelectedItem="{Binding SelectedTime}"
-                Margin="0,5,0,0"
-                IsVisible="{Binding SelectedDate, Converter={StaticResource NullToBoolConverter}}">
-                    <CollectionView.ItemsLayout>
-                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10"/>
-                    </CollectionView.ItemsLayout>
-                    <CollectionView.ItemTemplate>
-                        <DataTemplate>
-                            <Border Style="{StaticResource RoundedBorderStyle}"
-                   Padding="15" 
-                   BackgroundColor="#FFD0C2">
-                                <Label Text="{Binding Time}" 
-                       FontSize="14"
-                       TextColor="#4A2E27"/>
-                            </Border>
-                        </DataTemplate>
-                    </CollectionView.ItemTemplate>
-                </CollectionView>
-                
-                <!-- Итоговая цена -->
-                <Label Text="{Binding TotalPrice, StringFormat='Итого: {0} руб.'}"
-                       FontSize="18" 
-                       FontAttributes="Bold"
-                       TextColor="#4A2E27"
-                       HorizontalOptions="End"
-                       Margin="0,10,0,0"/>
+                    <!-- Шаг 2: Выбор мастера -->
+                    <Label Text="2. Выберите мастера:" 
+                           FontAttributes="Bold"
+                           TextColor="#4A2E27"
+                           FontSize="16"/>
 
-                <!-- Кнопка бронирования -->
-                <Button Text="Забронировать"
-                        Command="{Binding BookAppointmentCommand}"
-                        IsEnabled="{Binding SelectedTime, Converter={StaticResource NullToBoolConverter}}"
-                        Style="{StaticResource RoundedButtonStyle}"
-                        BackgroundColor="#694237"
-                        TextColor="#FFFFFF"
-                        FontAttributes="Bold"
-                        Margin="0,20,0,0"/>
-            </StackLayout>
-        </VerticalStackLayout>
-    </ScrollView>
+                    <Border Style="{StaticResource RoundedBorderStyle}"
+                           BackgroundColor="#FFFFFF">
+                        <Picker ItemsSource="{Binding AvailableMasters}"
+                                SelectedItem="{Binding SelectedMaster}"
+                                ItemDisplayBinding="{Binding Name}"
+                                BackgroundColor="Transparent"
+                                Title="Выбрать мастера"
+                                TitleColor="#694237"
+                                TextColor="#4A2E27">
+                            <Picker.Behaviors>
+                                <behaviors:EventToCommandBehavior
+                                    EventName="SelectedIndexChanged"
+                                    Command="{Binding LoadDatesCommand}"/>
+                            </Picker.Behaviors>
+                        </Picker>
+                    </Border>
+
+                    <!-- Информация о мастере -->
+                    <Border IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"
+                           Style="{StaticResource RoundedBorderStyle}"
+                           BackgroundColor="#FFD0C2"
+                           Padding="10"
+                           Margin="0,10,0,0">
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                              ColumnSpacing="10" RowSpacing="5">
+                            <Image Source="{Binding SelectedMaster.AvatarUrl}"
+                                   WidthRequest="60" HeightRequest="60"
+                                   Aspect="AspectFill" Grid.RowSpan="2">
+                                <Image.Clip>
+                                    <EllipseGeometry Center="30,30" RadiusX="30" RadiusY="30"/>
+                                </Image.Clip>
+                            </Image>
+                            <Label Text="{Binding SelectedMaster.Name}" 
+                                   FontAttributes="Bold" 
+                                   TextColor="#4A2E27"
+                                   Grid.Column="1"/>
+                            <Label Text="{Binding SelectedMaster.JobTitle}" 
+                                   TextColor="#694237" 
+                                   Grid.Column="1" Grid.Row="1"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Шаг 3: Выбор даты -->
+                    <Label Text="3. Выберите дату:" 
+                           FontAttributes="Bold"
+                           TextColor="#4A2E27"
+                           FontSize="16"
+                           IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"/>
+
+                    <Border Style="{StaticResource RoundedBorderStyle}"
+                           BackgroundColor="#FFFFFF">
+                        <DatePicker 
+                                Date="{Binding SelectedDate, Mode=TwoWay}"  
+                                MinimumDate="{x:Static system:DateTime.Today}"
+                                BackgroundColor="Transparent"
+                                TextColor="#4A2E27"
+                                Format="dd.MM.yyyy"
+                                IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"/>
+                    </Border>
+
+                    <!-- Шаг 4: Выбор времени -->
+                    <Label Text="4. Выберите время:" 
+                           FontAttributes="Bold" 
+                           TextColor="#4A2E27"
+                           FontSize="16"
+                           IsVisible="{Binding SelectedDate, Converter={StaticResource NullToBoolConverter}}"/>
+
+                    <!-- Сообщение когда нет доступных времен -->
+                    <Label Text="На данную дату запись отсутствует"
+                           IsVisible="{Binding AvailableTimesEmpty}"
+                           FontAttributes="Italic"
+                           TextColor="#694237"
+                           HorizontalOptions="Center"
+                           Margin="0,20,0,0"/>
+
+                    <CollectionView ItemsSource="{Binding AvailableTimes}"
+                                  SelectionMode="Single"
+                                  SelectedItem="{Binding SelectedTime}"
+                                  Margin="0,5,0,0"
+                                  IsVisible="{Binding AvailableTimesNotEmpty}">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10"/>
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource RoundedBorderStyle}"
+                                       Padding="15" 
+                                       BackgroundColor="#FFD0C2">
+                                    <Label Text="{Binding Time}" 
+                                           FontSize="14"
+                                           TextColor="#4A2E27"/>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- Итоговая цена -->
+                    <Label Text="{Binding TotalPrice, StringFormat='Итого: {0} руб.'}"
+                           FontSize="18" 
+                           FontAttributes="Bold"
+                           TextColor="#4A2E27"
+                           HorizontalOptions="End"
+                           Margin="0,10,0,0"/>
+
+                    <!-- Кнопка бронирования -->
+                    <Button Text="Забронировать"
+                            Command="{Binding BookAppointmentCommand}"
+                            IsEnabled="{Binding SelectedTime, Converter={StaticResource NullToBoolConverter}}"
+                            Style="{StaticResource RoundedButtonStyle}"
+                            BackgroundColor="#694237"
+                            TextColor="#FFFFFF"
+                            FontAttributes="Bold"
+                            Margin="0,20,0,0"/>
+                </StackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Индикатор загрузки (поверх всего) -->
+        <ActivityIndicator IsVisible="{Binding IsBusy}"
+                           IsRunning="{Binding IsBusy}"
+                           Color="#694237"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           HeightRequest="50"
+                           WidthRequest="50"/>
+    </Grid>
 </ContentPage>

@@ -5,7 +5,7 @@ using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Diagnostics;
 using System.Text;
 using System.Windows.Input;
 
@@ -25,6 +25,16 @@ namespace Barbarossa.ViewModels
         private ObservableCollection<Service> _selectedServices = [];
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsNotBusy))]
+        private bool _isBusy;
+
+        [ObservableProperty]
+        private bool _availableTimesEmpty;
+
+        [ObservableProperty]
+        private bool _availableTimesNotEmpty;
+
+        [ObservableProperty]
         private Master? _selectedMaster;
 
         [ObservableProperty]
@@ -38,31 +48,16 @@ namespace Barbarossa.ViewModels
 
         [ObservableProperty]
         private ObservableCollection<DateTime> _availableDates = [];
-        
+
         [ObservableProperty]
-        private ObservableCollection<AvailableSlot> _availableTimes = new ObservableCollection<AvailableSlot>();
+        private ObservableCollection<AvailableSlot> _availableTimes = [];
 
         [ObservableProperty]
         private decimal _totalPrice;
 
-        public ICommand ShowDurationInfoCommand => new Command<string>(async (duration) =>
-        {
-            var snackbarOptions = new SnackbarOptions
-            {
-                BackgroundColor = Color.FromArgb("#FFD0C2"),
-                TextColor = Color.FromArgb("#4A2E27"),
-                CornerRadius = new CornerRadius(10),
-                Font = Microsoft.Maui.Font.SystemFontOfSize(14)
-            };
-
-            await Shell.Current.DisplaySnackbar(
-                    message: $"Продолжительность выполнения услуги: {duration}",
-                    actionButtonText: "OK",
-                    duration: TimeSpan.FromSeconds(3),
-                    visualOptions: snackbarOptions);
-        });
-
+        public bool IsNotBusy => !IsBusy;
         public bool ShowNextSteps => SelectedServices.Any();
+
         public string SelectedServicesText => SelectedServices.Any()
             ? $"Выбрано услуг: {SelectedServices.Count}"
             : "Выберите хотя бы одну услугу";
@@ -77,55 +72,30 @@ namespace Barbarossa.ViewModels
         public IAsyncRelayCommand LoadDataCommand { get; }
         public IAsyncRelayCommand LoadDatesCommand => new AsyncRelayCommand(LoadDatesAsync);
 
-        // Команда для обработки выбора элемента
         public ICommand ItemSelectedCommand => new Command<Service>(item =>
         {
             item.IsSelected = !item.IsSelected;
-
             UpdateSelectedServices();
             UpdateAvailableMasters();
         });
+
         partial void OnSelectedDateChanged(DateTime value)
         {
-            // Вызов асинхронной обработки
             _ = HandleDateChangeAsync(value);
         }
-        private async Task HandleDateChangeAsync(DateTime newDate)
+
+        partial void OnAvailableTimesChanged(ObservableCollection<AvailableSlot> value)
         {
-            if (SelectedMaster == null || SelectedDate == default)
-                return;
-
-            try
-            {
-                var dateKey = SelectedDate.ToString("dd.MM.yyyy");
-                if (SelectedMaster.AvailableSlots.TryGetValue(dateKey, out var times))
-                {
-                    AvailableTimes.Clear();
-                    foreach (var time in times.Distinct().OrderBy(t => t.Time))
-                    {
-                        AvailableTimes.Add(time);
-                    }
-                }
-                else
-                {
-                    AvailableTimes.Clear();
-                }
-
-                // Явно уведомляем об изменении
-                OnPropertyChanged(nameof(AvailableTimes));
-            }
-            catch (Exception ex)
-            {
-                await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
-            }
+            UpdateTimeSlotsVisibility();
         }
 
         private async Task LoadDataAsync()
         {
             try
             {
-                _allMasters = await _apiService.GetMastersAsync();
+                IsBusy = true;
 
+                _allMasters = await _apiService.GetMastersAsync();
                 var services = _allMasters
                     .SelectMany(m => m.Services)
                     .DistinctBy(s => s.Id)
@@ -137,6 +107,80 @@ namespace Barbarossa.ViewModels
             {
                 await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
             }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        private async Task LoadDatesAsync()
+        {
+            if (SelectedMaster == null)
+                return;
+
+            try
+            {
+                IsBusy = true;
+
+                var dates = SelectedMaster.AvailableSlots.Keys
+                    .Select(DateTime.Parse)
+                    .Where(d => d >= DateTime.Today)
+                    .OrderBy(d => d);
+
+                AvailableDates = [.. dates];
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        private async Task HandleDateChangeAsync(DateTime newDate)
+        {
+            if (SelectedMaster == null || SelectedDate == default)
+                return;
+
+            try
+            {
+                IsBusy = true;
+
+                var dateKey = SelectedDate.ToString("dd.MM.yyyy");
+
+                Debug.WriteLine($"Checking slots for date: {dateKey}");
+
+                if (SelectedMaster.AvailableSlots.TryGetValue(dateKey, out var times))
+                {
+                    AvailableTimes = [.. times.Distinct().OrderBy(t => t.Time)];
+
+                    Debug.WriteLine($"Found {AvailableTimes.Count} available times");
+                }
+                else
+                {
+                    AvailableTimes.Clear();
+                    Debug.WriteLine("No available times found");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
+            }
+            finally
+            {
+                IsBusy = false;
+                UpdateTimeSlotsVisibility();
+            }
+        }
+
+        private void UpdateTimeSlotsVisibility()
+        {
+            AvailableTimesEmpty = AvailableTimes.Count == 0;
+            AvailableTimesNotEmpty = !AvailableTimesEmpty;
+
+            Debug.WriteLine($"Time slots visibility - Empty: {AvailableTimesEmpty}, NotEmpty: {AvailableTimesNotEmpty}");
         }
 
         private void UpdateSelectedServices()
@@ -152,31 +196,11 @@ namespace Barbarossa.ViewModels
                 var selectedServiceIds = SelectedServices.Select(s => s.Id).ToList();
                 AvailableMasters = [.. _allMasters.Where(master =>
                         selectedServiceIds.All(serviceId =>
-                            master.Services.Any(s => s.Id == serviceId))
-                    )];
+                            master.Services.Any(s => s.Id == serviceId)))];
             }
             else
             {
                 AvailableMasters.Clear();
-            }
-        }
-        private async Task LoadDatesAsync()
-        {
-            if (SelectedMaster == null)
-                return;
-
-            try
-            {
-                var dates = SelectedMaster.AvailableSlots.Keys
-                    .Select(DateTime.Parse)
-                    .Where(d => d >= DateTime.Today)
-                    .OrderBy(d => d);
-
-                AvailableDates = [.. dates];
-            }
-            catch (Exception ex)
-            {
-                await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
             }
         }
 
@@ -189,14 +213,16 @@ namespace Barbarossa.ViewModels
         private async Task BookAppointment()
         {
             if (!SelectedServices.Any() || SelectedMaster == null ||
-                SelectedDate == default || SelectedTime != null)
+                SelectedDate == default || SelectedTime == null)
             {
-                await Shell.Current.DisplayAlert("Ошибка", "Пожалуйста, заполните все поля", "OK");
+                await Shell.Current.DisplayAlert("Ошибка",
+                    "Пожалуйста, заполните все поля", "OK");
                 return;
             }
 
             var confirmationMessage = BuildConfirmationMessage();
-            await Shell.Current.DisplayAlert("Подтверждение брони", confirmationMessage, "OK");
+            await Shell.Current.DisplayAlert("Подтверждение брони",
+                confirmationMessage, "OK");
         }
 
         private string BuildConfirmationMessage()
@@ -220,5 +246,22 @@ namespace Barbarossa.ViewModels
 
             return sb.ToString();
         }
+
+        public ICommand ShowDurationInfoCommand => new Command<string>(async (duration) =>
+        {
+            var snackbarOptions = new SnackbarOptions
+            {
+                BackgroundColor = Color.FromArgb("#FFD0C2"),
+                TextColor = Color.FromArgb("#4A2E27"),
+                CornerRadius = new CornerRadius(10),
+                Font = Microsoft.Maui.Font.SystemFontOfSize(14)
+            };
+
+            await Shell.Current.DisplaySnackbar(
+                message: $"Продолжительность выполнения услуги: {duration}",
+                actionButtonText: "OK",
+                duration: TimeSpan.FromSeconds(3),
+                visualOptions: snackbarOptions);
+        });
     }
 }
