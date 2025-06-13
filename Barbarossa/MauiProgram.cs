@@ -34,10 +34,15 @@ public static class MauiProgram
         builder.Services.AddTransient<BookingViewModel>();
         builder.Services.AddTransient<BookingPage>();
 
+
         // Регистрация конвертеров
         builder.Services.AddSingleton<NullToBoolConverter>();
         builder.Services.AddSingleton<GreaterThanZeroConverter>();
         builder.Services.AddSingleton<TimeSlotBackgroundConverter>();
+        builder.Services.AddSingleton<ISecureStorage>(SecureStorage.Default);
+        builder.Services.AddSingleton<IUserService, UserService>();
+        builder.Services.AddSingleton<UserViewModel>();
+        builder.Services.AddTransient<ProfilePage>();
 
         var app = builder.Build();
         Services = app.Services;

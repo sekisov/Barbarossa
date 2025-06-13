@@ -62,11 +62,27 @@ namespace Barbarossa.ViewModels
             ? $"Выбрано услуг: {SelectedServices.Count}"
             : "Выберите хотя бы одну услугу";
 
-        public BookingViewModel(IApiService apiService)
+        private readonly IUserService _userService;
+        private User _currentUser;
+        public BookingViewModel(IApiService apiService, IUserService userService)
         {
             _apiService = apiService;
+            _userService = userService;
+            LoginAsync().GetAwaiter();
+
             LoadDataCommand = new AsyncRelayCommand(LoadDataAsync);
             LoadDataCommand.Execute(null);
+        }
+
+        private async Task LoginAsync()
+        {
+            if (await _userService.LoginAsync("Email", "Password"))
+            {
+                // Получаем данные пользователя из заглушки
+                _currentUser = _userService.CurrentUser;
+
+                await Shell.Current.GoToAsync("//MainPage");
+            }
         }
 
         public IAsyncRelayCommand LoadDataCommand { get; }
@@ -105,7 +121,7 @@ namespace Barbarossa.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
+                await ShowAlert("Ошибка", ex.Message);
             }
             finally
             {
@@ -131,7 +147,7 @@ namespace Barbarossa.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
+                await ShowAlert("Ошибка", ex.Message);
             }
             finally
             {
@@ -154,7 +170,8 @@ namespace Barbarossa.ViewModels
 
                 if (SelectedMaster.AvailableSlots.TryGetValue(dateKey, out var times))
                 {
-                    AvailableTimes = [.. times.Distinct().OrderBy(t => t.Time)];
+                    AvailableTimes = new ObservableCollection<AvailableSlot>(
+                        times.Distinct().OrderBy(t => t.Time));
 
                     Debug.WriteLine($"Found {AvailableTimes.Count} available times");
                 }
@@ -166,7 +183,7 @@ namespace Barbarossa.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Ошибка", ex.Message, "OK");
+                await ShowAlert("Ошибка", ex.Message);
             }
             finally
             {
@@ -185,7 +202,8 @@ namespace Barbarossa.ViewModels
 
         private void UpdateSelectedServices()
         {
-            SelectedServices = [.. AllServices.Where(s => s.IsSelected)];
+            SelectedServices = new ObservableCollection<Service>(
+                AllServices.Where(s => s.IsSelected));
             CalculateTotal();
         }
 
@@ -194,9 +212,10 @@ namespace Barbarossa.ViewModels
             if (SelectedServices.Any())
             {
                 var selectedServiceIds = SelectedServices.Select(s => s.Id).ToList();
-                AvailableMasters = [.. _allMasters.Where(master =>
+                AvailableMasters = new ObservableCollection<Master>(
+                    _allMasters.Where(master =>
                         selectedServiceIds.All(serviceId =>
-                            master.Services.Any(s => s.Id == serviceId)))];
+                            master.Services.Any(s => s.Id == serviceId))));
             }
             else
             {
@@ -215,14 +234,12 @@ namespace Barbarossa.ViewModels
             if (!SelectedServices.Any() || SelectedMaster == null ||
                 SelectedDate == default || SelectedTime == null)
             {
-                await Shell.Current.DisplayAlert("Ошибка",
-                    "Пожалуйста, заполните все поля", "OK");
+                await ShowAlert("Ошибка", "Пожалуйста, заполните все поля");
                 return;
             }
 
             var confirmationMessage = BuildConfirmationMessage();
-            await Shell.Current.DisplayAlert("Подтверждение брони",
-                confirmationMessage, "OK");
+            await ShowAlert("Подтверждение брони", confirmationMessage);
         }
 
         private string BuildConfirmationMessage()
@@ -247,21 +264,70 @@ namespace Barbarossa.ViewModels
             return sb.ToString();
         }
 
+        private async Task ShowAlert(string title, string message)
+        {
+            try
+            {
+                if (Application.Current?.MainPage != null)
+                {
+                    await Application.Current.MainPage.DisplayAlert(title, message, "OK");
+                }
+                else if (Shell.Current != null)
+                {
+                    await Shell.Current.DisplayAlert(title, message, "OK");
+                }
+                else
+                {
+                    Debug.WriteLine($"ALERT: {title} - {message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при отображении alert: {ex}");
+            }
+        }
+
         public ICommand ShowDurationInfoCommand => new Command<string>(async (duration) =>
         {
-            var snackbarOptions = new SnackbarOptions
+            try
             {
-                BackgroundColor = Color.FromArgb("#FFD0C2"),
-                TextColor = Color.FromArgb("#4A2E27"),
-                CornerRadius = new CornerRadius(10),
-                Font = Microsoft.Maui.Font.SystemFontOfSize(14)
-            };
+                var options = new SnackbarOptions
+                {
+                    BackgroundColor = Color.FromArgb("#FFD0C2"),
+                    TextColor = Color.FromArgb("#4A2E27"),
+                    CornerRadius = new CornerRadius(10),
+                    Font = Microsoft.Maui.Font.SystemFontOfSize(14)
+                };
 
-            await Shell.Current.DisplaySnackbar(
-                message: $"Продолжительность выполнения услуги: {duration}",
-                actionButtonText: "OK",
-                duration: TimeSpan.FromSeconds(3),
-                visualOptions: snackbarOptions);
+                var message = $"Продолжительность выполнения услуги: {duration}";
+
+                // Вариант 1: Использование Snackbar.Make (рекомендуемый)
+                var snackbar = new Snackbar
+                {
+                    Text = message,
+                    Duration = TimeSpan.FromSeconds(3),
+                    ActionButtonText = "OK",
+                    VisualOptions = options
+                };
+
+                await snackbar.Show();
+
+                // ИЛИ Вариант 2: Через Shell.Current (если нужно)
+                /*
+                if (Shell.Current != null)
+                {
+                    await Shell.Current.DisplaySnackbar(
+                        message,
+                        visualOptions: options,
+                        actionButtonText: "OK",
+                        duration: TimeSpan.FromSeconds(3));
+                }
+                */
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при отображении snackbar: {ex}");
+            }
         });
     }
 }

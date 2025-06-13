@@ -78,6 +78,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Update="Views\ProfilePage.xaml.cs">
+	    <DependentUpon>ProfilePage.xaml</DependentUpon>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiXaml Update="Views\ProfilePage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	</ItemGroup>
+
+	<ItemGroup>
 	  <None Update="Resources\Images\app_icon.png">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>

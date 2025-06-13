@@ -1,0 +1,41 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Barbarossa.Views.ProfilePage"
+             xmlns:converters="clr-namespace:Barbarossa.Converters" 
+             Title="Профиль">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <converters:AuthButtonTextConverter x:Key="AuthButtonTextConverter"/>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <!-- Поля только для чтения при просмотре -->
+            <Label Text="Имя:"/>
+            <Entry Text="{Binding Name}" IsReadOnly="{Binding IsAuthenticated, Converter={StaticResource InverseBoolConverter}}"/>
+
+            <Label Text="Телефон:"/>
+            <Entry Text="{Binding Phone}" Keyboard="Telephone"
+                   IsReadOnly="{Binding IsAuthenticated, Converter={StaticResource InverseBoolConverter}}"/>
+
+            <Label Text="Email:"/>
+            <Entry Text="{Binding Email}" Keyboard="Email"
+                   IsReadOnly="{Binding IsAuthenticated, Converter={StaticResource InverseBoolConverter}}"/>
+
+            <!-- Кнопки действий -->
+            <Button Text="{Binding IsAuthenticated, Converter={StaticResource AuthButtonTextConverter}}"
+                    Command="{Binding LoginCommand}"/>
+
+            <Button Text="Обновить профиль" 
+                    Command="{Binding UpdateProfileCommand}"
+                    IsVisible="{Binding IsAuthenticated}"/>
+
+            <Button Text="Выйти" 
+                    Command="{Binding LogoutCommand}"
+                    IsVisible="{Binding IsAuthenticated}"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
