@@ -10,17 +10,19 @@ namespace Barbarossa;
 public static class MauiProgram
 {
     public static IServiceProvider Services { get; private set; }
+
     public static MauiApp CreateMauiApp()
     {
         var builder = MauiApp.CreateBuilder();
 
         builder
             .UseMauiApp<App>()
-            .UseMauiCommunityToolkit() // Должно быть сразу после UseMauiApp<T>
+            .UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
             });
 
 #if DEBUG
@@ -38,7 +40,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<TimeSlotBackgroundConverter>();
 
         var app = builder.Build();
-        Services = app.Services; // Сохраняем ServiceProvider
+        Services = app.Services;
         return app;
     }
 }

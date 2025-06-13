@@ -20,6 +20,7 @@
             <converters:BoolToTextColorConverter x:Key="BoolToTextColorConverter" />
             <converters:BoolToSecondaryTextColorConverter x:Key="BoolToSecondaryTextColorConverter" />
             <converters:NullToBoolConverter x:Key="NullToBoolConverter" />
+            <converters:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter"/>
 
             <!-- Общие стили -->
             <Style TargetType="Border" x:Key="RoundedBorderStyle">
@@ -58,7 +59,7 @@
                        Margin="0,0,0,10"/>
 
                 <Border Style="{StaticResource RoundedBorderStyle}"
-                       BackgroundColor="#FFFFFF">
+                        BackgroundColor="#FFFFFF">
                     <CollectionView ItemsSource="{Binding AllServices}"
                                    SelectionMode="None"
                                    Style="{StaticResource RoundedCollectionViewStyle}">
@@ -130,16 +131,19 @@
                 </Border>
 
                 <!-- Последующие шаги -->
+                <!-- Шаг 2 и последующие шаги -->
                 <StackLayout IsVisible="{Binding ShowNextSteps}" Spacing="15">
 
                     <!-- Шаг 2: Выбор мастера -->
                     <Label Text="2. Выберите мастера:" 
-                           FontAttributes="Bold"
-                           TextColor="#4A2E27"
-                           FontSize="16"/>
+                                    IsVisible="{Binding SelectedServices.Count, Converter={StaticResource GreaterThanZeroConverter}}"
+                                    FontAttributes="Bold"
+                                    TextColor="#4A2E27"
+                                    FontSize="16"/>
 
-                    <Border Style="{StaticResource RoundedBorderStyle}"
-                           BackgroundColor="#FFFFFF">
+                    <Border IsVisible="{Binding SelectedServices.Count, Converter={StaticResource GreaterThanZeroConverter}}"
+                            Style="{StaticResource RoundedBorderStyle}"
+                            BackgroundColor="#FFFFFF">
                         <Picker ItemsSource="{Binding AvailableMasters}"
                                 SelectedItem="{Binding SelectedMaster}"
                                 ItemDisplayBinding="{Binding Name}"
@@ -149,62 +153,36 @@
                                 TextColor="#4A2E27">
                             <Picker.Behaviors>
                                 <behaviors:EventToCommandBehavior
-                                    EventName="SelectedIndexChanged"
-                                    Command="{Binding LoadDatesCommand}"/>
+                                                                    EventName="SelectedIndexChanged"
+                                                                    Command="{Binding LoadDatesCommand}"/>
                             </Picker.Behaviors>
                         </Picker>
                     </Border>
 
-                    <!-- Информация о мастере -->
-                    <Border IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"
-                           Style="{StaticResource RoundedBorderStyle}"
-                           BackgroundColor="#FFD0C2"
-                           Padding="10"
-                           Margin="0,10,0,0">
-                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
-                              ColumnSpacing="10" RowSpacing="5">
-                            <Image Source="{Binding SelectedMaster.AvatarUrl}"
-                                   WidthRequest="60" HeightRequest="60"
-                                   Aspect="AspectFill" Grid.RowSpan="2">
-                                <Image.Clip>
-                                    <EllipseGeometry Center="30,30" RadiusX="30" RadiusY="30"/>
-                                </Image.Clip>
-                            </Image>
-                            <Label Text="{Binding SelectedMaster.Name}" 
-                                   FontAttributes="Bold" 
-                                   TextColor="#4A2E27"
-                                   Grid.Column="1"/>
-                            <Label Text="{Binding SelectedMaster.JobTitle}" 
-                                   TextColor="#694237" 
-                                   Grid.Column="1" Grid.Row="1"/>
-                        </Grid>
-                    </Border>
-
                     <!-- Шаг 3: Выбор даты -->
                     <Label Text="3. Выберите дату:" 
+                           IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"
                            FontAttributes="Bold"
                            TextColor="#4A2E27"
-                           FontSize="16"
-                           IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"/>
+                           FontSize="16"/>
 
-                    <Border Style="{StaticResource RoundedBorderStyle}"
-                           BackgroundColor="#FFFFFF">
+                    <Border IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"
+                            Style="{StaticResource RoundedBorderStyle}"
+                            BackgroundColor="#FFFFFF">
                         <DatePicker 
-                                Date="{Binding SelectedDate, Mode=TwoWay}"  
-                                MinimumDate="{x:Static system:DateTime.Today}"
-                                BackgroundColor="Transparent"
-                                TextColor="#4A2E27"
-                                Format="dd.MM.yyyy"
-                                IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"/>
+                                    Date="{Binding SelectedDate, Mode=TwoWay}"  
+                                    MinimumDate="{x:Static system:DateTime.Today}"
+                                    BackgroundColor="Transparent"
+                                    TextColor="#4A2E27"
+                                    Format="dd.MM.yyyy"/>
                     </Border>
 
                     <!-- Шаг 4: Выбор времени -->
                     <Label Text="4. Выберите время:" 
+                           IsVisible="{Binding AvailableTimesEmpty}"
                            FontAttributes="Bold" 
                            TextColor="#4A2E27"
-                           FontSize="16"
-                           IsVisible="{Binding SelectedDate, Converter={StaticResource NullToBoolConverter}}"/>
-
+                           FontSize="16"/>
                     <!-- Сообщение когда нет доступных времен -->
                     <Label Text="На данную дату запись отсутствует"
                            IsVisible="{Binding AvailableTimesEmpty}"
@@ -214,18 +192,18 @@
                            Margin="0,20,0,0"/>
 
                     <CollectionView ItemsSource="{Binding AvailableTimes}"
-                                  SelectionMode="Single"
-                                  SelectedItem="{Binding SelectedTime}"
-                                  Margin="0,5,0,0"
-                                  IsVisible="{Binding AvailableTimesNotEmpty}">
+                                    SelectionMode="Single"
+                                    SelectedItem="{Binding SelectedTime}"
+                                    Margin="0,5,0,0"
+                                    IsVisible="{Binding AvailableTimesNotEmpty}">
                         <CollectionView.ItemsLayout>
                             <LinearItemsLayout Orientation="Horizontal" ItemSpacing="10"/>
                         </CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
                                 <Border Style="{StaticResource RoundedBorderStyle}"
-                                       Padding="15" 
-                                       BackgroundColor="#FFD0C2">
+                                        BackgroundColor="#FFFFFF"
+                                        Padding="15">
                                     <Label Text="{Binding Time}" 
                                            FontSize="14"
                                            TextColor="#4A2E27"/>
