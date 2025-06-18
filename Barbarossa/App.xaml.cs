@@ -9,10 +9,10 @@ public partial class App : Application
     {
         InitializeComponent();
 
-        // Получаем ViewModel через DI
-        var viewModel = MauiProgram.Services.GetRequiredService<BookingViewModel>();
+        //// Получаем ViewModel через DI
+        //var viewModel = MauiProgram.Services.GetRequiredService<BookingViewModel>();
 
         // Создаем страницу, передавая ViewModel
-        MainPage = new NavigationPage(new BookingPage(viewModel));
+        MainPage = new AppShell();
     }
 }

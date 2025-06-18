@@ -2,6 +2,7 @@
 using Barbarossa.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.ComponentModel;
 
 namespace Barbarossa.ViewModels
 {
@@ -13,6 +14,7 @@ namespace Barbarossa.ViewModels
         private User _currentUser;
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(WelcomeMessage))]
         private bool _isAuthenticated;
 
         [ObservableProperty]
@@ -27,10 +29,19 @@ namespace Barbarossa.ViewModels
         [ObservableProperty]
         private string _password;
 
+        public string WelcomeMessage => IsAuthenticated ? $"Добро пожаловать, {Name}!" : "Пожалуйста, войдите";
+
         public UserViewModel(IUserService userService)
         {
             _userService = userService;
+            _userService.PropertyChanged += OnUserServicePropertyChanged;
             Initialize();
+        }
+
+        private void OnUserServicePropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(IUserService.CurrentUser))
+                UpdateUserData();
         }
 
         private async void Initialize()
@@ -39,7 +50,7 @@ namespace Barbarossa.ViewModels
             UpdateUserData();
         }
 
-        private void UpdateUserData()
+        public void UpdateUserData()
         {
             CurrentUser = _userService.CurrentUser;
             IsAuthenticated = _userService.IsAuthenticated;
@@ -49,6 +60,13 @@ namespace Barbarossa.ViewModels
                 Name = CurrentUser.Name;
                 Phone = CurrentUser.Phone;
                 Email = CurrentUser.Email;
+            }
+            else
+            {
+                Name = string.Empty;
+                Phone = string.Empty;
+                Email = string.Empty;
+                Password = string.Empty;
             }
         }
 

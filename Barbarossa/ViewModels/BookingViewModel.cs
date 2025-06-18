@@ -4,6 +4,7 @@ using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Maui.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.VisualBasic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
@@ -64,7 +65,8 @@ namespace Barbarossa.ViewModels
 
         private readonly IUserService _userService;
         private User _currentUser;
-        public BookingViewModel(IApiService apiService, IUserService userService)
+        private AppointmentService _appointmentService;
+        public BookingViewModel(IApiService apiService, IUserService userService, AppointmentService _appointmentService)
         {
             _apiService = apiService;
             _userService = userService;
@@ -202,8 +204,7 @@ namespace Barbarossa.ViewModels
 
         private void UpdateSelectedServices()
         {
-            SelectedServices = new ObservableCollection<Service>(
-                AllServices.Where(s => s.IsSelected));
+            SelectedServices = [.. AllServices.Where(s => s.IsSelected)];
             CalculateTotal();
         }
 
@@ -212,10 +213,9 @@ namespace Barbarossa.ViewModels
             if (SelectedServices.Any())
             {
                 var selectedServiceIds = SelectedServices.Select(s => s.Id).ToList();
-                AvailableMasters = new ObservableCollection<Master>(
-                    _allMasters.Where(master =>
+                AvailableMasters = [.. _allMasters.Where(master =>
                         selectedServiceIds.All(serviceId =>
-                            master.Services.Any(s => s.Id == serviceId))));
+                            master.Services.Any(s => s.Id == serviceId)))];
             }
             else
             {
@@ -231,37 +231,50 @@ namespace Barbarossa.ViewModels
         [RelayCommand]
         private async Task BookAppointment()
         {
-            if (!SelectedServices.Any() || SelectedMaster == null ||
-                SelectedDate == default || SelectedTime == null)
-            {
-                await ShowAlert("Ошибка", "Пожалуйста, заполните все поля");
+            if (IsBusy || !ValidateInput())
                 return;
-            }
 
-            var confirmationMessage = BuildConfirmationMessage();
-            await ShowAlert("Подтверждение брони", confirmationMessage);
+            IsBusy = true;
+
+            try
+            {
+                var success = await _appointmentService.CreateAppointment(
+                    SelectedMaster!.Id,
+                    string.Join(", ", SelectedServices!.Select(s => s.Id)),
+                    SelectedDate.ToString("dd.MM.yyyy"),
+                    SelectedTime!.Id,
+                    _currentUser,
+                    "");
+
+                if (success)
+                {
+                    await Shell.Current.DisplayAlert("Успех", "Запись оформлена", "OK");
+                    await Shell.Current.GoToAsync("..");
+                }
+                else
+                {
+                    await Shell.Current.DisplayAlert("Ошибка", "Не удалось оформить запись", "OK");
+                }
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
-        private string BuildConfirmationMessage()
+        private bool ValidateInput()
         {
-            var sb = new StringBuilder()
-                .AppendLine("Подтверждение бронирования")
-                .AppendLine("----------------------------")
-                .AppendLine($"Мастер: {SelectedMaster?.Name}")
-                .AppendLine($"Дата: {SelectedDate:dd.MM.yyyy}")
-                .AppendLine($"Время: {SelectedTime?.Time}")
-                .AppendLine()
-                .AppendLine("Выбранные услуги:");
+            return !string.IsNullOrWhiteSpace(_currentUser.Name) &&
+                   !string.IsNullOrWhiteSpace(_currentUser.Phone) &&
+                   SelectedMaster != null &&
+                   SelectedServices != null &&
+                   SelectedTime != null;
+        }
 
-            foreach (var service in SelectedServices)
-            {
-                sb.AppendLine($"- {service.Name} ({service.Price} руб.)");
-            }
-
-            sb.AppendLine()
-              .AppendLine($"Итого: {TotalPrice} руб.");
-
-            return sb.ToString();
+        [RelayCommand]
+        private async Task GoToProducts()
+        {
+            await Shell.Current.GoToAsync("//ProductsPage");
         }
 
         private async Task ShowAlert(string title, string message)

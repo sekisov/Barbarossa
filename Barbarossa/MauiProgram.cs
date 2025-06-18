@@ -28,21 +28,33 @@ public static class MauiProgram
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
-
+       
         // Регистрация сервисов
         builder.Services.AddSingleton<IApiService, ApiService>();
         builder.Services.AddTransient<BookingViewModel>();
-        builder.Services.AddTransient<BookingPage>();
+        //builder.Services.AddSingleton<IProductService, ProductService>();
+        builder.Services.AddSingleton<IProductService, FakeProductService>();
+        builder.Services.AddSingleton<IUserService, UserService>();
 
+        builder.Services.AddSingleton<ProductsViewModel>();
+        builder.Services.AddSingleton<ProductsPage>();
+
+        builder.Services.AddSingleton<UserViewModel>();
+        builder.Services.AddTransient<ProfilePage>();
+        builder.Services.AddTransient<BookingPage>();
 
         // Регистрация конвертеров
         builder.Services.AddSingleton<NullToBoolConverter>();
         builder.Services.AddSingleton<GreaterThanZeroConverter>();
         builder.Services.AddSingleton<TimeSlotBackgroundConverter>();
-        builder.Services.AddSingleton<ISecureStorage>(SecureStorage.Default);
-        builder.Services.AddSingleton<IUserService, UserService>();
-        builder.Services.AddSingleton<UserViewModel>();
-        builder.Services.AddTransient<ProfilePage>();
+        builder.Services.AddSingleton(SecureStorage.Default);
+
+
+        builder.Services.AddSingleton<AppointmentService>();
+
+        builder.Services.AddSingleton<BoolToTextConverter>();
+        builder.Services.AddSingleton<BoolToColorConverter>();
+        builder.Services.AddSingleton<BoolToCommandConverter>();
 
         var app = builder.Build();
         Services = app.Services;

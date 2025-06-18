@@ -1,9 +1,11 @@
 ﻿using Barbarossa.Models;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace Barbarossa.Services
 {
-    public interface IUserService
+    public interface IUserService : INotifyPropertyChanged
     {
         User CurrentUser { get; }
         bool IsAuthenticated { get; }
@@ -14,17 +16,38 @@ namespace Barbarossa.Services
         Task LogoutAsync();
     }
 
-    public class UserService : IUserService
+    public class UserService : IUserService, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
         private const string UserDataKey = "user_data";
         private readonly ISecureStorage _secureStorage;
 
-        public User CurrentUser { get; private set; }
+        private User _currentUser;
+        public User CurrentUser
+        {
+            get => _currentUser;
+            private set
+            {
+                if (_currentUser != value)
+                {
+                    _currentUser = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(IsAuthenticated));
+                }
+            }
+        }
+
         public bool IsAuthenticated => CurrentUser != null;
 
         public UserService(ISecureStorage secureStorage)
         {
             _secureStorage = secureStorage;
+        }
+
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         public async Task InitializeAsync()
@@ -39,27 +62,20 @@ namespace Barbarossa.Services
 
         public async Task<bool> LoginAsync(string email, string password)
         {
-            // 1. Валидация входных данных
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
                 return false;
 
-            // 2. Заглушка - создаем тестового пользователя
             CurrentUser = new User
             {
-                Id = Guid.NewGuid(), // Уникальный идентификатор
-                Name = "Владислав", // Пример имени
-                Email = "vasekisov@gmail.com", // Используем введенный email
-                Phone = "+79991234567", // Тестовый телефон
-                CreatedAt = DateTime.UtcNow.AddDays(-10), // Дата регистрации
-                LastLogin = DateTime.UtcNow // Текущая дата входа
+                Id = Guid.NewGuid(),
+                Name = "Владислав",
+                Email = "email@gmail.com",
+                Phone = "+79991234567",
+                CreatedAt = DateTime.UtcNow.AddDays(-10),
+                LastLogin = DateTime.UtcNow
             };
 
-            // 3. Сохраняем данные в SecureStorage
             await SaveUserData();
-
-            // 4. Логируем успешный вход (для отладки)
-            Console.WriteLine($"User logged in: {CurrentUser}");
-
             return true;
         }
 
@@ -79,10 +95,11 @@ namespace Barbarossa.Services
             await SaveUserData();
         }
 
-        public async Task LogoutAsync()
+        public Task LogoutAsync()
         {
             CurrentUser = null;
-            _secureStorage.Remove(UserDataKey); // Исправлено на Remove вместо RemoveAsync
+            _secureStorage.Remove(UserDataKey); // Используем синхронный Remove
+            return Task.CompletedTask;
         }
 
         private async Task SaveUserData()
@@ -91,4 +108,5 @@ namespace Barbarossa.Services
             await _secureStorage.SetAsync(UserDataKey, userData);
         }
     }
+
 }
