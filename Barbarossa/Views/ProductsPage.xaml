@@ -1,60 +1,92 @@
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Barbarossa.Views.ProductsPage"
              xmlns:viewmodel="clr-namespace:Barbarossa.ViewModels"
-             x:DataType="viewmodel:ProductsViewModel"
-             Title="Товары">
+             NavigationPage.HasNavigationBar="False"
+             BackgroundColor="#FFE8E1"
+             Padding="10">
 
     <RefreshView Command="{Binding LoadProductsCommand}"
-                 IsRefreshing="{Binding IsLoading}">
+                IsRefreshing="{Binding IsLoading}">
         <CollectionView ItemsSource="{Binding Products}"
                        SelectionMode="None">
             <CollectionView.ItemsLayout>
-                <GridItemsLayout Orientation="Vertical" Span="2" />
+                <GridItemsLayout Orientation="Vertical" 
+                                Span="2" 
+                                VerticalItemSpacing="10"
+                                HorizontalItemSpacing="10"/>
             </CollectionView.ItemsLayout>
 
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Border Stroke="#EEEEEE"
-                            StrokeThickness="1"
+                    <Border Stroke="Transparent"
+                            StrokeThickness="0"
                             StrokeShape="RoundRectangle 10"
-                            Margin="5"
-                            HeightRequest="350">
-                        <StackLayout Spacing="5" Padding="10">
+                            BackgroundColor="White"
+                            Margin="5">
+                        <!-- Кастомная тень -->
+                        <Border.Shadow>
+                            <Shadow Brush="#40000000"
+                                    Offset="2,2"
+                                    Radius="4"
+                                    Opacity="0.5"/>
+                        </Border.Shadow>
+
+                        <Grid RowDefinitions="Auto,Auto,*,Auto"
+                              Padding="0">
                             <!-- Изображение товара -->
                             <Image Source="{Binding ImageUrl}"
                                    Aspect="AspectFill"
-                                   HeightRequest="150"/>
+                                   HeightRequest="180"
+                                   Grid.Row="0">
+                                <Image.Clip>
+                                    <RoundRectangleGeometry CornerRadius="10,10,0,0"
+                                                            Rect="0,0,10000,180"/>
+                                </Image.Clip>
+                            </Image>
 
                             <!-- Название товара -->
                             <Label Text="{Binding Name}"
-                                   FontSize="14"
+                                   FontSize="16"
                                    FontAttributes="Bold"
                                    MaxLines="1"
-                                   LineBreakMode="TailTruncation"/>
+                                   LineBreakMode="TailTruncation"
+                                   Margin="10,5"
+                                   Grid.Row="1"/>               
 
                             <!-- Описание товара -->
                             <Label Text="{Binding Description}"
                                    FontSize="12"
                                    TextColor="#666666"
                                    MaxLines="2"
-                                   LineBreakMode="WordWrap"/>
+                                   LineBreakMode="WordWrap"
+                                   Margin="10,0"
+                                   Grid.Row="2"/>
 
-                            <!-- Цена -->
-                            <Label Text="{Binding Price, StringFormat='{0:C}'}"
-                                   FontSize="16"
-                                   TextColor="#4A2E27"
-                                   FontAttributes="Bold"/>
+                            <!-- Цена и кнопка -->
+                            <Grid ColumnDefinitions="*,*"
+                                  RowDefinitions="Auto"
+                                  Margin="10"
+                                  Grid.Row="3">
+                                <Label Text="{Binding Price, StringFormat='{0}₽'}"
+                                       FontSize="18"
+                                       TextColor="#4A2E27"
+                                       FontAttributes="Bold"
+                                       VerticalOptions="Center"
+                                       Grid.Column="0"/>
 
-                            <!-- Кнопка покупки -->
-                            <Button Text="Купить"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:ProductsViewModel}}, Path=BuyCommand}"
-                                    CommandParameter="{Binding .}"
-                                    BackgroundColor="#4A2E27"
-                                    TextColor="White"
-                                    CornerRadius="8"
-                                    HeightRequest="40"/>
-                        </StackLayout>
+                                <Button Text="Купить"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:ProductsViewModel}}, Path=BuyProductCommand}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="#4A2E27"
+                                        TextColor="White"
+                                        CornerRadius="5"
+                                        HeightRequest="40"
+                                        FontSize="13"
+                                        Grid.Column="1"/>
+                            </Grid>
+                        </Grid>
                     </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>

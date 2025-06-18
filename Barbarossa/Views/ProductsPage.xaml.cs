@@ -4,21 +4,12 @@ namespace Barbarossa.Views
 {
     public partial class ProductsPage : ContentPage
     {
-        public ProductsPage(ProductsViewModel viewModel)
+        public ProductsPage()
         {
             InitializeComponent();
-            BindingContext = viewModel;
-        }
 
-        protected override void OnAppearing()
-        {
-            base.OnAppearing();
-
-            // Дополнительная загрузка при появлении страницы
-            if (BindingContext is ProductsViewModel vm)
-            {
-                vm.LoadProductsCommand.Execute(null);
-            }
+            // Убедитесь, что BindingContext установлен
+            BindingContext = MauiProgram.Services.GetService<ProductsViewModel>();
         }
     }
 }

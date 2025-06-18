@@ -3,7 +3,6 @@
              xmlns:viewmodels="clr-namespace:Barbarossa.ViewModels"
              xmlns:converters="clr-namespace:Barbarossa.Converters"
              x:Class="Barbarossa.Views.ProfilePage"
-             Title="Профиль"
              NavigationPage.HasNavigationBar="False"
              x:DataType="viewmodels:UserViewModel">
 

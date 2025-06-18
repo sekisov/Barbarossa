@@ -9,7 +9,6 @@
              xmlns:converters="clr-namespace:Barbarossa.Converters" 
              xmlns:animations="clr-namespace:Barbarossa.Services" 
              x:Class="Barbarossa.Views.BookingPage"
-             Title="Бронирование"
              NavigationPage.HasNavigationBar="False"
              BackgroundColor="#FFE8E1"
              x:Name="Page">
