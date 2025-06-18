@@ -136,10 +136,10 @@
 
                     <!-- Шаг 2: Выбор мастера -->
                     <Label Text="2. Выберите мастера:" 
-                                    IsVisible="{Binding SelectedServices.Count, Converter={StaticResource GreaterThanZeroConverter}}"
-                                    FontAttributes="Bold"
-                                    TextColor="#4A2E27"
-                                    FontSize="16"/>
+                           IsVisible="{Binding SelectedServices.Count, Converter={StaticResource GreaterThanZeroConverter}}"
+                           FontAttributes="Bold"
+                           TextColor="#4A2E27"
+                           FontSize="16"/>
 
                     <Border IsVisible="{Binding SelectedServices.Count, Converter={StaticResource GreaterThanZeroConverter}}"
                             Style="{StaticResource RoundedBorderStyle}"
@@ -158,7 +158,29 @@
                             </Picker.Behaviors>
                         </Picker>
                     </Border>
-
+                    <Border IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"
+                            Style="{StaticResource RoundedBorderStyle}"
+                            BackgroundColor="#FFD0C2"
+                            Padding="10"
+                            Margin="0,10,0,0">
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto"
+                              ColumnSpacing="10" RowSpacing="5">
+                            <Image Source="{Binding SelectedMaster.AvatarUrl}"
+                                   WidthRequest="60" HeightRequest="60"
+                                   Aspect="AspectFill" Grid.RowSpan="2">
+                                <Image.Clip>
+                                    <EllipseGeometry Center="30,30" RadiusX="30" RadiusY="30"/>
+                                </Image.Clip>
+                            </Image>
+                            <Label Text="{Binding SelectedMaster.Name}" 
+                                   FontAttributes="Bold" 
+                                   TextColor="#4A2E27"
+                                   Grid.Column="1"/>
+                            <Label Text="{Binding SelectedMaster.JobTitle}" 
+                                   TextColor="#694237" 
+                                   Grid.Column="1" Grid.Row="1"/>
+                        </Grid>
+                    </Border>
                     <!-- Шаг 3: Выбор даты -->
                     <Label Text="3. Выберите дату:" 
                            IsVisible="{Binding SelectedMaster, Converter={StaticResource NullToBoolConverter}}"
@@ -176,7 +198,7 @@
                                     TextColor="#4A2E27"
                                     Format="dd.MM.yyyy"/>
                     </Border>
-
+                    
                     <!-- Шаг 4: Выбор времени -->
                     <Label Text="4. Выберите время:" 
                            IsVisible="{Binding AvailableTimesEmpty}"
